@@ -177,13 +177,20 @@ namespace GeneticImageMatching
         static void Main(string[] args)
         {
             string projectPath = "D:\\Work\\Fun\\GeneticImageMatching\\GeneticImageMatching\\";
-            string filePath = "res\\griever.txt";
+            string filePath = "res\\pokeball.txt";
             int dimX = File.ReadLines(projectPath + filePath).Count(); // # Lines in file
             int dimY = File.ReadLines(projectPath + filePath).First().Count(); // # Characters in line
             int goalFitness = ((dimX * dimY)/100); // 1 %
             int generationLimit = 300;
             int mutationImpact = ((dimX * dimY)/10); // 10 %
             int populationSize = 1000;
+            bool dynamicOutput = false;
+
+            if (!dynamicOutput)
+            {
+                Console.WriteLine("Image dimensions: " + dimX + " x " + dimY + ", size: " + (dimX * dimY));
+                Console.WriteLine("Population size: " + populationSize + ", Goal fitness: " + goalFitness + ", Generation limit: " + generationLimit + ", Mutation Impact: " + mutationImpact);
+            }
 
             int[,] goal = getGoal(projectPath + filePath, dimX, dimY);
             List<int[,]> population = generatePopulation(populationSize, dimX, dimY);
@@ -197,9 +204,21 @@ namespace GeneticImageMatching
                 population = evolve(population, populationSize, populationSize/4, mutationImpact);
                 population = evaluate(population, goal);
                 currentFitness = calculateFitness(population[0], goal);
-                output(dimX, dimY, populationSize, goalFitness, generationLimit, mutationImpact, population[0], currentFitness, generation);
+                if (dynamicOutput)
+                {
+                    output(dimX, dimY, populationSize, goalFitness, generationLimit, mutationImpact, population[0], currentFitness, generation);
+                    //System.Threading.Thread.Sleep(50);
+                }
+                else
+                {
+                    Console.WriteLine("Generation: " + generation + ", fitness: " + currentFitness);
+                }
                 generation++;
-                //System.Threading.Thread.Sleep(50);
+            }
+
+            if (!dynamicOutput)
+            {
+                printPerson(population[0]);
             }
             Console.WriteLine("Done!");
             Console.ReadLine();
