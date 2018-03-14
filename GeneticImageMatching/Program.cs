@@ -37,12 +37,17 @@ namespace GeneticImageMatching
             return goal;
         }
 
-        public static List<int[,]> generatePopulation(int size, int x, int y)
+        public static List<int[,]> generatePopulation(int populationSize, int goalSize)
         {// Create a population based on the goals dimensions
             List<int[,]> population = new List<int[,]>();
             Random random = new Random();
-            for (int i = 0; i < size; i++)
+            int upper = (int) (Math.Sqrt(goalSize) * 1.25);
+            int lower = (int)(Math.Sqrt(goalSize) * 0.75);
+            int x, y;
+            for (int i = 0; i < populationSize; i++)
             {
+                x = random.Next(lower, upper);
+                y = random.Next(lower, upper);
                 int[,] person = new int[x, y];
                 for (int j = 0; j < x; j++)
                 {
@@ -59,15 +64,50 @@ namespace GeneticImageMatching
         public static int calculateFitness(int[,] person, int[,] goal)
         {// Calculate hamming distance between person and goal
             int fitness = 0;
-            int x = goal.GetLength(0);
-            int y = goal.GetLength(1);
+            int x = person.GetLength(0);
+            int y = person.GetLength(1);
+            
+            int personSize = person.Length;
+            int goalSize = goal.Length;
+            if (personSize < goalSize)
+            {
+                fitness = Math.Abs(goalSize - personSize);
+            }
             for (int i = 0; i < x; i++)
             {
                 for (int j = 0; j < y; j++)
                 {
-                    if (person[i, j] != goal[i, j])
+                    try
                     {
-                        fitness++;
+                        if (person[i, j] != goal[i, j])
+                        {
+                            fitness++;
+                        }
+                    }
+                    catch (IndexOutOfRangeException ioore)
+                    {
+                        int temp;
+                        try
+                        {
+                            temp = goal[0, j];
+                        }
+                        catch (IndexOutOfRangeException ioore2)
+                        {
+                            j = y;
+                            fitness += y;
+                        }
+
+                        try
+                        {
+                            temp = goal[i, 0];
+                        }
+                        catch (IndexOutOfRangeException ioore3)
+                        {
+                            int leftovers = x - i;
+                            i = x;
+                            j = y;
+                            fitness += leftovers * y;
+                        }
                     }
                 }
             }
@@ -77,7 +117,7 @@ namespace GeneticImageMatching
         public static int[,] crossover(int[,] person1, int[,] person2)
         {// Create child via randomised crossover of parents
             int x = person1.GetLength(0);
-            int y = person1.GetLength(1);
+            int y = person2.GetLength(1);
             int[,] child = new int[x, y];
             Random random = new Random();
             for (int i = 0; i < x; i++)
@@ -86,11 +126,39 @@ namespace GeneticImageMatching
                 {
                     if(random.Next(0, 2) == 0)
                     {
-                        child[i, j] = person1[i, j];
+                        try
+                        {
+                            child[i, j] = person1[i, j];
+                        }
+                        catch (IndexOutOfRangeException ioore)
+                        {
+                            try
+                            {
+                                child[i, j] = person2[i, j];
+                            }
+                            catch (IndexOutOfRangeException ioore2)
+                            {
+                                child[i, j] = random.Next(0, 2);
+                            }
+                        }
                     }
                     else
                     {
-                        child[i, j] = person2[i, j];
+                        try
+                        {
+                            child[i, j] = person2[i, j];
+                        }
+                        catch (IndexOutOfRangeException ioore)
+                        {
+                            try
+                            {
+                                child[i, j] = person1[i, j];
+                            }
+                            catch (IndexOutOfRangeException ioore2)
+                            {
+                                child[i, j] = random.Next(0, 2);
+                            }
+                        }
                     }
                 }
             }
@@ -168,31 +236,45 @@ namespace GeneticImageMatching
         static void Main(string[] args)
         {
             string projectPath = "D:\\Work\\Fun\\GeneticImageMatching\\GeneticImageMatching\\";
-            string filePath = "res\\batman.txt";
+            string filePath = "res\\one.txt";
             int dimX = File.ReadLines(projectPath + filePath).Count(); // # Lines in file
             int dimY = File.ReadLines(projectPath + filePath).First().Count(); // # Characters in line
             int goalFitness = ((dimX * dimY)/100); // 1 %
             int generationLimit = 300;
             int mutationImpact = ((dimX * dimY)/10); // 10 %
-            int populationSize = 1000;
+            int populationSize = 500;
 
             Console.WriteLine("Image dimensions: " + dimX + " x " + dimY + ", size: " + (dimX * dimY));
             Console.WriteLine("Population size: " + populationSize + ", Goal fitness: " + goalFitness + ", Generation limit: " + generationLimit + ", Mutation Impact: " + mutationImpact);
 
             int[,] goal = getGoal(projectPath + filePath, dimX, dimY);
-            List<int[,]> population = generatePopulation(populationSize, dimX, dimY);
+            Console.Write("Generating population...");
+            List<int[,]> population = generatePopulation(populationSize, goal.Length);
+            Console.Write("Evaluating population...");
             population = evaluate(population, goal);
-
+            foreach (int[,] person in population)
+            {
+                Console.WriteLine("dimensions: " + person.GetLength(0) + "x" + person.GetLength(1) + ", size: " + person.Length + ", fitness: " + calculateFitness(person, goal));
+            }
+            Console.WriteLine("Starting loop.");
             int currentFitness = calculateFitness(population[0], goal);
             int generation = 0;
 
             while (generation < generationLimit && currentFitness > goalFitness)
             {
-                population = evolve(population, populationSize, populationSize/4, mutationImpact);
+                Console.Write("Evoling population...");
+                population = evolve(population, populationSize, (int)populationSize/4, mutationImpact);
+                Console.Write("Evaluating population...");
                 population = evaluate(population, goal);
                 currentFitness = calculateFitness(population[0], goal);
-                Console.WriteLine("Generation: " + generation + ", fitness: " + currentFitness);
+                Console.WriteLine("Generation: " + generation + ", fitness: " + currentFitness + ", size: " + population[0].GetLength(0) + "x" + population[0].GetLength(1));
+                
                 generation++;
+                /*foreach(int[,] person in population)
+                {
+                    Console.WriteLine("dimensions: " + person.GetLength(0) + "x" + person.GetLength(1) + ", size: " + person.Length + ", fitness: " + calculateFitness(person, goal));
+                }
+                Console.ReadLine();*/
             }
             printPerson(population[0]);
             Console.ReadLine();
