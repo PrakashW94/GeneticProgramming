@@ -168,7 +168,7 @@ namespace GeneticImageMatching
         static void Main(string[] args)
         {
             string projectPath = "D:\\Work\\Fun\\GeneticImageMatching\\GeneticImageMatching\\";
-            string filePath = "res\\batman.txt";
+            string filePath = "res\\one.txt";
             int dimX = File.ReadLines(projectPath + filePath).Count(); // # Lines in file
             int dimY = File.ReadLines(projectPath + filePath).First().Count(); // # Characters in line
             int goalFitness = ((dimX * dimY)/100); // 1 %
